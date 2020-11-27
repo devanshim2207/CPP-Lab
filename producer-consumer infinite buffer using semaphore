@@ -1,0 +1,76 @@
+#include <pthread.h>
+#include <semaphore.h>
+#include <stdlib.h>
+#include <stdio.h>
+
+#define MaxItems 5// Maximum items a producer can produce or a consumer can consume
+#define BufferSize 5 // Size of the buffer
+
+sem_t empty;
+int in = 0;
+int out = 0;
+int buffer[BufferSize];
+pthread_mutex_t mutex;
+int myrand(int n){
+ 
+    time_t t; 
+    srand((unsigned)time(&t)); 
+    return (rand() % n + 1); 
+} 
+void *producer(void *pno)
+{   
+    int item;
+    //for(int i = 0; i < MaxItems; i++) {
+    while(1){
+        item = myrand(50); // Produce an random item
+        sem_wait(&empty);
+        //sleep(1);
+        pthread_mutex_lock(&mutex);
+        buffer[in] = item;
+        printf("Produced item no %d = %d\n",in,buffer[in]);
+         sleep(1);
+        in = (in+1)%BufferSize;
+        pthread_mutex_unlock(&mutex);
+        
+    }
+    pthread_exit(NULL);
+}
+void *consumer(void * arg)
+{   
+   // for(int i = 0; i < MaxItems; i++) {
+    while(1){
+     
+        pthread_mutex_lock(&mutex);
+    
+        int item = buffer[out];
+        printf("consumed item no %d = %d\n",out,item);
+        buffer[out]=-1;
+         sleep(1);
+        out = (out+1)%BufferSize;
+        pthread_mutex_unlock(&mutex);
+        sem_post(&empty);
+    }
+    pthread_exit(NULL);
+}
+
+int main()
+{   
+
+    pthread_t pro,con;
+    pthread_mutex_init(&mutex, NULL);
+    sem_init(&empty,0,BufferSize);
+
+ 
+        pthread_create(&pro, NULL, (void *)producer, NULL);
+        pthread_create(&con, NULL, (void *)consumer, NULL);
+
+        pthread_join(pro, NULL);
+        pthread_join(con, NULL);
+   
+    pthread_mutex_destroy(&mutex);
+    sem_destroy(&empty);
+ 
+
+    return 0;
+    
+}
