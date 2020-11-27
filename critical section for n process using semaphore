@@ -1,0 +1,57 @@
+#include <pthread.h>
+#include <semaphore.h>
+#include <stdlib.h>
+#include <stdio.h>
+
+sem_t sema;
+
+
+void *process1(void *arg)
+{   
+    while(1){
+     	printf("Process 1 is in non-critical section\n");
+     	 sem_wait(&sema);
+     	 sleep(1);
+     	 printf("Process 1 is in critical section\n");
+     	 for(int i=0;i<2;i++)
+     	 printf("Process 1\n");
+     	 sleep(1);
+     	 sem_post(&sema);
+     	 }
+     	 pthread_exit(NULL);
+}
+void *process2(void *arg)
+{   
+    while(1){
+     	printf("Process 2 is in non-critical section\n");
+     	 sem_wait(&sema);
+     	 sleep(1);
+ 
+     	 printf("Process 2 is in critical section\n");
+     	 for(int i=0;i<2;i++)
+     	 printf("Process 2\n");
+     	 
+     	 sem_post(&sema);
+     	 }
+     	pthread_exit(NULL); 
+}
+
+int main()
+{   
+
+    pthread_t p,q;
+  
+    sem_init(&sema,0,1);
+        pthread_create(&p, NULL, process1, NULL);
+
+        pthread_create(&q, NULL, process2, NULL);
+ 
+        pthread_join(p, NULL);
+    
+        pthread_join(q, NULL);
+    
+    sem_destroy(&sema);
+    
+    return 0;
+    
+}
