@@ -1,0 +1,166 @@
+#include<bits/stdc++.h>
+#include<pthread.h>
+#include <unistd.h>
+#define buffersize 5
+
+using namespace std;
+int in=0,out=0, buffer[buffersize];
+int myrand(int n){
+ 
+    time_t t; 
+    srand((unsigned)time(&t)); 
+    return (rand() % n + 1); 
+} 
+pthread_mutex_t m1;
+pthread_mutex_t m2;
+
+class monitor
+
+{
+
+    public:
+
+            
+        pthread_cond_t notempty;
+        pthread_cond_t notfull;
+
+        void append(char id, int item){
+
+            if(in == buffersize)
+
+                {
+
+                    printf("Process %c blocked\n", id);
+
+                    pthread_cond_wait(&notfull,&m1);
+
+                }
+                
+		
+		buffer[in] = item;
+		
+		printf(" process %c produced item no %d = %d\n",id,in,buffer[in]);
+		
+		usleep(1000000);
+		
+		in = (in+1)%buffersize;
+
+           pthread_cond_signal(&notempty);
+
+        }
+
+        int take(char id){
+
+            if(in == 0){
+
+           pthread_cond_wait(&notempty,&m2);
+           }
+           
+           int item = buffer[out];
+           
+            buffer[out]=-1;
+            
+	    
+	    usleep(1000000);
+		
+	    out = (out+1)%buffersize;
+	   pthread_cond_signal(&notfull);
+	   
+	   return item;
+        }
+	// constructor
+        monitor(){
+
+            s=1;
+
+            pthread_cond_init(&notempty,NULL);
+	    pthread_cond_init(&notfull,NULL);
+        
+
+        }
+
+};
+
+monitor pc;
+
+void *Thread1(void *arg)
+
+{
+
+    char *k=(char *)arg;
+
+    char id=*k;
+    
+    int item;
+    while(1)
+
+    {   
+
+        //produce
+
+        item = myrand(50);
+        
+	pc.append(id, item);
+       
+
+        usleep(1000000);
+
+    }
+
+    
+    	//   pthread_exit(NULL);
+
+}
+
+void *Thread2(void *arg)
+
+{
+
+    char *k=(char *)arg;
+
+    char id=*k;
+    
+    int item;
+
+    while(1)
+
+    {
+    		item = pc.take(id);
+
+        	printf("process %c consumed item  %d\n",id,item);        
+
+        	usleep(1000000);
+
+
+
+    }
+   
+    	 //pthread_exit(NULL);
+}
+
+ 
+
+int main()
+
+{
+
+    pthread_t tid1, tid2;
+
+    char p='A', q='B';
+
+    pthread_mutex_init(&m1,NULL);
+    
+    pthread_mutex_init(&m2,NULL);
+
+    pthread_create(&tid1, NULL, &Thread1, &p);
+
+    pthread_create(&tid2, NULL, &Thread2, &q);
+    pthread_exit(NULL);
+
+    pthread_mutex_destroy(&m1);
+    pthread_mutex_destroy(&m2);
+
+    return 0;
+
+}
+	
